@@ -13,10 +13,16 @@ case $(uname) in
     echo "Linux"
     arIpAddress() {
         local extip
-        extip=$(ip -o -4 addr list | grep -Ev '\s(docker|lo)' | awk '{print $4}' | cut -d/ -f1 | grep -Ev '(^127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^172\.1[6-9]{1}[0-9]{0,1}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^172\.2[0-9]{1}[0-9]{0,1}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^172\.3[0-1]{1}[0-9]{0,1}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^192\.168\.[0-9]{1,3}\.[0-9]{1,3}$)')
+        extip=$(curl -s http://ns1.dnspod.net:6666)
+	
         if [ "x${extip}" = "x" ]; then
-	        extip=$(ip -o -4 addr list | grep -Ev '\s(docker|lo)' | awk '{print $4}' | cut -d/ -f1 )
+                extip=$(ip -o -4 addr list | grep -Ev '\s(docker|lo)' | awk '{print $4}' | cut -d/ -f1 | grep -Ev '(^127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^10\.[0-9]{1,3}\.[0-9]{1,3}\.[    0-9]{1,3}$)|(^172\.1[6-9]{1}[0-9]{0,1}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^172\.2[0-9]{1}[0-9]{0,1}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^172\.3[0-1]{1}[0-9]{0,1}\.[0-9]{1,3}\.[0-9]{1,3}$)|(^192\.168\.[0-9]{1    ,3}\.[0-9]{1,3}$)')
         fi
+	
+        if [ "x${extip}" = "x" ]; then
+                  extip=$(ip -o -4 addr list | grep -Ev '\s(docker|lo)' | awk '{print $4}' | cut -d/ -f1 )
+        fi
+	
         echo $extip
     }
     ;;
@@ -118,6 +124,7 @@ arDdnsInfo() {
     # Get Record ID
     recordID=$(arApiPost "Record.List" "domain_id=${domainID}&sub_domain=${2}")
     recordID=$(echo $recordID | sed 's/.*\[{"id":"\([0-9]*\)".*/\1/')
+    echo ${recordID}
     
     # Last IP
     recordIP=$(arApiPost "Record.Info" "domain_id=${domainID}&record_id=${recordID}")
@@ -146,7 +153,8 @@ arApiPost() {
     else
         local param="login_token=${arToken}&format=json&${2}"
     fi
-    wget --quiet --no-check-certificate --output-document=- --user-agent=$agent --post-data $param $inter
+    #wget --quiet --no-check-certificate --output-document=- --user-agent=$agent --post-data $param $inter
+    curl -X POST $inter -d $param -s
 }
 
 # Update
